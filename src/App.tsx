@@ -34,6 +34,7 @@ function App() {
         logoWidth: 56,
         logoHeight: 56,
         rotateLogo: false,
+        showIcons: true,
     })
 
     const handleSignatureUpdate = (newData: Partial<SignatureData>) => {

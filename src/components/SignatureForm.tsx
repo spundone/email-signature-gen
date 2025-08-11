@@ -384,6 +384,18 @@ const SignatureForm: React.FC<SignatureFormProps> = ({ signatureData, onUpdate }
             Hide Website
           </label>
         </div>
+
+        <div className="form-group">
+          <label className="checkbox-label">
+            <input
+              type="checkbox"
+              checked={signatureData.showIcons}
+              onChange={(e) => handleInputChange('showIcons', e.target.checked)}
+              className="form-checkbox"
+            />
+            Show Icons
+          </label>
+        </div>
       </div>
     </div>
   )

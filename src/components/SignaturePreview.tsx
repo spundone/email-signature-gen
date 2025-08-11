@@ -7,32 +7,58 @@ interface SignaturePreviewProps {
   signatureData: SignatureData
 }
 
+const EmailIcon = ({ color, size }: { color: string; size: number }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ verticalAlign: 'middle' }} aria-hidden="true">
+    <rect x="2" y="4" width="20" height="16" rx="2" />
+    <polyline points="22,6 12,13 2,6" />
+  </svg>
+)
+
+const PhoneIcon = ({ color, size }: { color: string; size: number }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ verticalAlign: 'middle' }} aria-hidden="true">
+    <path d="M22 16.92V21a2 2 0 0 1-2.18 2A19.72 19.72 0 0 1 3 5.18 2 2 0 0 1 5 3h4.09a2 2 0 0 1 2 1.72c.13 1.13.37 2.23.72 3.28a2 2 0 0 1-.45 2.11l-1.27 1.27a16 16 0 0 0 6.29 6.29l1.27-1.27a2 2 0 0 1 2.11-.45c1.05.35 2.15.59 3.28.72A2 2 0 0 1 22 16.92z" />
+  </svg>
+)
+
+const WebsiteIcon = ({ color, size }: { color: string; size: number }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ verticalAlign: 'middle' }} aria-hidden="true">
+    <circle cx="12" cy="12" r="10" />
+    <line x1="2" y1="12" x2="22" y2="12" />
+    <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
+  </svg>
+)
+
 const SignaturePreview: React.FC<SignaturePreviewProps> = ({ signatureData }) => {
   const signatureRef = useRef<HTMLDivElement>(null)
   const [qrCode, setQrCode] = useState<string>('')
   const [logoUrl, setLogoUrl] = useState<string>('')
 
-  // Generate QR code when signature data changes
+  // Generate vCard for QR code
   useEffect(() => {
     if (signatureData.showQr && signatureData.name) {
       const vcard = [
         'BEGIN:VCARD',
         'VERSION:3.0',
         `FN:${signatureData.name}`,
-        `TITLE:${signatureData.title || ''}`,
-        signatureData.email ? `EMAIL:${signatureData.email}` : '',
-        signatureData.phone ? `TEL:${signatureData.phone}` : '',
+        signatureData.title ? `TITLE:${signatureData.title}` : '',
+        signatureData.company ? `ORG:${signatureData.company}` : '',
+        signatureData.email ? `EMAIL;TYPE=INTERNET:${signatureData.email}` : '',
+        signatureData.phone ? `TEL;TYPE=CELL:${signatureData.phone}` : '',
         signatureData.website ? `URL:${signatureData.website}` : '',
-        'END:VCARD'
-      ].filter(Boolean).join('\n')
-
+        signatureData.address ? `ADR;TYPE=WORK:;;${signatureData.address}` : '',
+        signatureData.industry ? `NOTE:Industry: ${signatureData.industry}` : '',
+        signatureData.subtext ? `NOTE:${signatureData.subtext}` : '',
+        'END:VCARD',
+      ]
+        .filter(Boolean)
+        .join('\n')
       QRCode.toDataURL(vcard, {
         width: 60,
         margin: 0,
         color: {
           dark: signatureData.accentColor,
-          light: signatureData.backgroundColor
-        }
+          light: signatureData.backgroundColor,
+        },
       }).then(url => setQrCode(url))
     } else {
       setQrCode('')
@@ -52,10 +78,9 @@ const SignaturePreview: React.FC<SignaturePreviewProps> = ({ signatureData }) =>
 
   const handleExportHTML = () => {
     if (!signatureRef.current) return
-
     const html = signatureRef.current.outerHTML
     const blob = new Blob([`<!DOCTYPE html><html><body>${html}</body></html>`], {
-      type: 'text/html'
+      type: 'text/html',
     })
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
@@ -69,16 +94,14 @@ const SignaturePreview: React.FC<SignaturePreviewProps> = ({ signatureData }) =>
 
   const handleExportImage = async () => {
     if (!signatureRef.current) return
-
     try {
       const html2canvas = (await import('html2canvas')).default
       const canvas = await html2canvas(signatureRef.current, {
         useCORS: true,
         allowTaint: false,
         backgroundColor: signatureData.backgroundColor,
-        scale: 2
+        scale: 2,
       })
-
       const url = canvas.toDataURL('image/png')
       const a = document.createElement('a')
       a.href = url
@@ -92,16 +115,21 @@ const SignaturePreview: React.FC<SignaturePreviewProps> = ({ signatureData }) =>
     }
   }
 
-  const renderInfoField = (key: string, label: string, value: string, icon: string, hide?: boolean) => {
+  const renderInfoField = (
+    key: string,
+    label: string,
+    value: string,
+    icon: React.ReactNode,
+    hide?: boolean
+  ) => {
     if (hide || !value) return null
-
     return (
       <div key={key} className="info-field">
-        <span className="info-icon" style={{ color: signatureData.accentColor }}>
-          <svg width={signatureData.iconSize} height={signatureData.iconSize} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+        {signatureData.showIcons && (
+          <span className="info-icon" style={{ color: signatureData.accentColor }}>
             {icon}
-          </svg>
-        </span>
+          </span>
+        )}
         <span className="info-text">{value}</span>
       </div>
     )
@@ -212,11 +240,9 @@ const SignaturePreview: React.FC<SignaturePreviewProps> = ({ signatureData }) =>
               </div>
             )}
 
-            {renderInfoField('email', 'Email', signatureData.email, '<path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/>', signatureData.hideEmail)}
-
-            {renderInfoField('phone', 'Phone', signatureData.phone, '<path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/>', signatureData.hidePhone)}
-
-            {renderInfoField('website', 'Website', signatureData.website, '<path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>', signatureData.hideUrl)}
+            {renderInfoField('email', 'Email', signatureData.email, <EmailIcon color={signatureData.accentColor} size={signatureData.iconSize} />, signatureData.hideEmail)}
+            {renderInfoField('phone', 'Phone', signatureData.phone, <PhoneIcon color={signatureData.accentColor} size={signatureData.iconSize} />, signatureData.hidePhone)}
+            {renderInfoField('website', 'Website', signatureData.website, <WebsiteIcon color={signatureData.accentColor} size={signatureData.iconSize} />, signatureData.hideUrl)}
 
             {signatureData.address && (
               <div className="address" style={{ fontSize: '12px', opacity: 0.7, marginTop: '4px' }}>

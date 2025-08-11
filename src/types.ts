@@ -25,6 +25,7 @@ export interface SignatureData {
   logoWidth: number
   logoHeight: number
   rotateLogo: boolean
+  showIcons: boolean
 }
 
 export interface LogoData {
