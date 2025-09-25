@@ -67,6 +67,20 @@
     box-shadow: 0 4px 12px rgba(255, 215, 0, 0.3);
 }
 
+.export-copy {
+    background: var(--bg-tertiary);
+    color: var(--text-primary);
+    border: 1px solid var(--glass-border);
+}
+
+.export-copy:hover {
+    background: var(--accent-yellow);
+    color: var(--bg-primary);
+    border-color: var(--accent-yellow);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(255, 215, 0, 0.3);
+}
+
 .preview-container {
     display: flex;
     justify-content: center;

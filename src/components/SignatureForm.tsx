@@ -208,6 +208,44 @@ const SignatureForm: React.FC<SignatureFormProps> = ({ signatureData, onUpdate }
               </div>
             </div>
 
+            <div className="form-row">
+              <div className="form-group">
+                <label htmlFor="logoAlign">Logo Alignment</label>
+                <select
+                  id="logoAlign"
+                  value={signatureData.logoAlign}
+                  onChange={(e) => handleInputChange('logoAlign', e.target.value)}
+                  className="form-select"
+                >
+                  {signatureData.layout === 'horizontal' ? (
+                    <>
+                      <option value="start">Left</option>
+                      <option value="center">Center</option>
+                      <option value="end">Right</option>
+                    </>
+                  ) : (
+                    <>
+                      <option value="start">Top</option>
+                      <option value="center">Center</option>
+                      <option value="end">Bottom</option>
+                    </>
+                  )}
+                </select>
+              </div>
+              <div className="form-group">
+                <label htmlFor="logoCrop">Logo Crop</label>
+                <select
+                  id="logoCrop"
+                  value={signatureData.logoCrop}
+                  onChange={(e) => handleInputChange('logoCrop', e.target.value)}
+                  className="form-select"
+                >
+                  <option value="contain">Fit (No Crop)</option>
+                  <option value="cover">Crop (Fill)</option>
+                </select>
+              </div>
+            </div>
+
             <div className="form-group">
               <label className="checkbox-label">
                 <input
@@ -319,7 +357,7 @@ const SignatureForm: React.FC<SignatureFormProps> = ({ signatureData, onUpdate }
         </div>
 
         <div className="form-group">
-          <label htmlFor="iconPadding">Icon Padding (px)</label>
+          <label htmlFor="iconPadding">Icon Padding (px, gap between icon and text)</label>
           <input
             type="range"
             id="iconPadding"

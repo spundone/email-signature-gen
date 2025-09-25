@@ -26,6 +26,8 @@ export interface SignatureData {
   logoHeight: number
   rotateLogo: boolean
   showIcons: boolean
+  logoAlign: 'start' | 'center' | 'end'
+  logoCrop: 'contain' | 'cover'
 }
 
 export interface LogoData {

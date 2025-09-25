@@ -16,7 +16,7 @@ const EmailIcon = ({ color, size }: { color: string; size: number }) => (
 
 const PhoneIcon = ({ color, size }: { color: string; size: number }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ verticalAlign: 'middle' }} aria-hidden="true">
-    <path d="M22 16.92V21a2 2 0 0 1-2.18 2A19.72 19.72 0 0 1 3 5.18 2 2 0 0 1 5 3h4.09a2 2 0 0 1 2 1.72c.13 1.13.37 2.23.72 3.28a2 2 0 0 1-.45 2.11l-1.27 1.27a16 16 0 0 0 6.29 6.29l1.27-1.27a2 2 0 0 1 2.11-.45c1.05.35 2.15.59 3.28.72A2 2 0 0 1 22 16.92z" />
+    <path d="M6.62 10.79a15.05 15.05 0 0 0 6.59 6.59l2.2-2.2a1 1 0 0 1 1.11-.21c1.21.49 2.53.76 3.88.76a1 1 0 0 1 1 1v3.61a1 1 0 0 1-1 1A17 17 0 0 1 3 5a1 1 0 0 1 1-1h3.61a1 1 0 0 1 1 1c0 1.35.27 2.67.76 3.88a1 1 0 0 1-.21 1.11l-2.2 2.2z" />
   </svg>
 )
 
@@ -115,6 +115,90 @@ const SignaturePreview: React.FC<SignaturePreviewProps> = ({ signatureData }) =>
     }
   }
 
+  const handleCopyToClipboard = async () => {
+    if (!signatureRef.current) return
+
+    try {
+      // Create a clean email signature HTML
+      const signatureElement = signatureRef.current.cloneNode(true) as HTMLElement
+
+      // Remove any inline styles that might cause issues in email clients
+      signatureElement.removeAttribute('style')
+
+      // Add email-friendly styles inline
+      const emailSignature = `
+<div style="font-family: ${signatureData.font === 'Inter' ? 'Inter, system-ui, -apple-system, sans-serif' : signatureData.font === 'JetBrains Mono' ? 'JetBrains Mono, monospace' : signatureData.font + ', sans-serif'}; color: ${signatureData.textColor}; background: ${signatureData.backgroundColor}; padding: 20px; border-radius: 8px; max-width: 480px;">
+  ${signatureElement.innerHTML}
+</div>`
+
+      // Create a temporary element to hold the HTML
+      const tempDiv = document.createElement('div')
+      tempDiv.innerHTML = emailSignature
+
+      // Use the Clipboard API with both text and HTML
+      const clipboardItem = new ClipboardItem({
+        'text/html': new Blob([emailSignature], { type: 'text/html' }),
+        'text/plain': new Blob([emailSignature], { type: 'text/plain' })
+      })
+
+      await navigator.clipboard.write([clipboardItem])
+
+      // Show success feedback
+      const button = document.querySelector('.export-copy') as HTMLButtonElement
+      if (button) {
+        const originalText = button.innerHTML
+        button.innerHTML = `
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <polyline points="20,6 9,17 4,12"/>
+          </svg>
+          Copied!
+        `
+        button.style.background = 'var(--accent-yellow)'
+        button.style.color = 'var(--bg-primary)'
+
+        setTimeout(() => {
+          button.innerHTML = originalText
+          button.style.background = ''
+          button.style.color = ''
+        }, 2000)
+      }
+    } catch (error) {
+      console.error('Failed to copy to clipboard:', error)
+      // Fallback to text copy if rich HTML copy fails
+      try {
+        const signatureElement = signatureRef.current.cloneNode(true) as HTMLElement
+        signatureElement.removeAttribute('style')
+        const emailSignature = `
+<div style="font-family: ${signatureData.font === 'Inter' ? 'Inter, system-ui, -apple-system, sans-serif' : signatureData.font === 'JetBrains Mono' ? 'JetBrains Mono, monospace' : signatureData.font + ', sans-serif'}; color: ${signatureData.textColor}; background: ${signatureData.backgroundColor}; padding: 20px; border-radius: 8px; max-width: 480px;">
+  ${signatureElement.innerHTML}
+</div>`
+        await navigator.clipboard.writeText(emailSignature)
+
+        // Show success feedback
+        const button = document.querySelector('.export-copy') as HTMLButtonElement
+        if (button) {
+          const originalText = button.innerHTML
+          button.innerHTML = `
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <polyline points="20,6 9,17 4,12"/>
+            </svg>
+            Copied!
+          `
+          button.style.background = 'var(--accent-yellow)'
+          button.style.color = 'var(--bg-primary)'
+
+          setTimeout(() => {
+            button.innerHTML = originalText
+            button.style.background = ''
+            button.style.color = ''
+          }, 2000)
+        }
+      } catch (fallbackError) {
+        alert('Failed to copy to clipboard. Please try using the Export HTML button instead.')
+      }
+    }
+  }
+
   const renderInfoField = (
     key: string,
     label: string,
@@ -124,7 +208,7 @@ const SignaturePreview: React.FC<SignaturePreviewProps> = ({ signatureData }) =>
   ) => {
     if (hide || !value) return null
     return (
-      <div key={key} className="info-field">
+      <div key={key} className="info-field" style={{ gap: signatureData.iconPadding }}>
         {signatureData.showIcons && (
           <span className="info-icon" style={{ color: signatureData.accentColor }}>
             {icon}
@@ -152,6 +236,13 @@ const SignaturePreview: React.FC<SignaturePreviewProps> = ({ signatureData }) =>
       <div className="preview-header">
         <h2 className="preview-title">Live Preview</h2>
         <div className="export-buttons">
+          <button onClick={handleCopyToClipboard} className="export-btn export-copy">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
+              <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+            </svg>
+            Copy Signature
+          </button>
           <button onClick={handleExportHTML} className="export-btn export-html">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
@@ -200,12 +291,12 @@ const SignaturePreview: React.FC<SignaturePreviewProps> = ({ signatureData }) =>
                 height: `${signatureData.logoHeight}px`,
                 borderRadius: '8px',
                 display: 'flex',
-                alignItems: 'center',
+                alignItems: signatureData.logoAlign === 'start' ? 'flex-start' : signatureData.logoAlign === 'end' ? 'flex-end' : 'center',
                 justifyContent: 'center',
                 flexShrink: 0,
                 marginBottom: signatureData.layout === 'vertical' ? `${signatureData.spacing}px` : '0',
                 marginRight: signatureData.layout === 'horizontal' ? `${signatureData.spacing}px` : '0',
-                overflow: 'hidden'
+                overflow: 'hidden',
               }}
             >
               <img
@@ -217,13 +308,13 @@ const SignaturePreview: React.FC<SignaturePreviewProps> = ({ signatureData }) =>
                   width: 'auto',
                   height: 'auto',
                   display: 'block',
-                  objectFit: 'contain',
+                  objectFit: signatureData.logoCrop,
                   background: '#fff',
                   borderRadius: '6px',
                   transform: signatureData.rotateLogo ? 'rotateY(180deg)' : 'rotateY(0deg)',
                   transition: 'transform 0.5s cubic-bezier(0.4,0.2,0.2,1)',
                   willChange: 'transform',
-                  backfaceVisibility: 'hidden'
+                  backfaceVisibility: 'hidden',
                 }}
               />
             </div>
